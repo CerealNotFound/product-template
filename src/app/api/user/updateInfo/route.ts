@@ -42,7 +42,7 @@ export async function PUT(request: Request) {
 
     // Update user profile in the profiles table
     const { data, error } = await supabase
-      .from("profiles")
+      .from("users")
       .update({
         name: body.name,
         updated_at: new Date().toISOString(),
