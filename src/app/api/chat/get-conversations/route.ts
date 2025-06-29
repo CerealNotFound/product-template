@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { getCurrentUser } from "@/lib/auth-utils";
 
 export async function GET() {
   try {
-    // Get current authenticated user
-    const user = await getCurrentUser();
     const supabase = await createClient();
+
+    // Get current authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
 
     const { data, error } = await supabase
       .from("conversations")
@@ -25,12 +35,6 @@ export async function GET() {
     return NextResponse.json(data || []);
   } catch (error) {
     console.error("Error in get-conversations:", error);
-    if (error instanceof Error && error.message === "User not authenticated") {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

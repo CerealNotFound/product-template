@@ -5,6 +5,19 @@ export async function GET() {
   try {
     const supabase = await createClient();
 
+    // Get current authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const { data, error } = await supabase
       .from("models")
       .select("id, name, logo")
