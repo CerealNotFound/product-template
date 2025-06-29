@@ -15,7 +15,13 @@ import {
   Trash2,
   Settings as LucideSettings,
 } from "lucide-react";
-import { inputAtom, layoutAtom } from "@/lib/atoms/chat";
+import {
+  inputAtom,
+  layoutAtom,
+  chatHistoriesAtom,
+  availableModels,
+  currentConversationIdAtom,
+} from "@/lib/atoms/chat";
 
 // Custom SVGs for panel layouts
 function TwoPanelIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -93,6 +99,67 @@ function OneByThreePanelIcon(props: React.SVGProps<SVGSVGElement>) {
 export function InputPanel() {
   const [input, setInput] = useAtom(inputAtom);
   const [layout, setLayout] = useAtom(layoutAtom);
+  const [chatHistories, setChatHistories] = useAtom(chatHistoriesAtom);
+  const [currentConversationId, setCurrentConversationId] = useAtom(
+    currentConversationIdAtom
+  );
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const content = input.trim();
+    const timestamp = new Date().toISOString();
+
+    // Add user message to all models immediately
+    const updatedHistories = { ...chatHistories };
+    availableModels.forEach((model) => {
+      const modelHistory = updatedHistories[model.id] || [];
+      updatedHistories[model.id] = [
+        ...modelHistory,
+        { role: "user", content, timestamp },
+      ];
+    });
+    setChatHistories(updatedHistories);
+
+    // Clear input
+    setInput("");
+
+    try {
+      // Use the new pipeline endpoint that creates conversation first
+      const response = await fetch("/api/chat/send-prompt-with-conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          model_ids: availableModels.map((m) => m.id),
+          conversation_title: `Multi-Brain Chat - ${new Date().toLocaleString()}`,
+          conversation_id: currentConversationId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Set the conversation ID for future messages
+        setCurrentConversationId(data.conversation_id);
+
+        // Add AI responses
+        const finalHistories = { ...updatedHistories };
+        data.responses.forEach((resp: any) => {
+          if (finalHistories[resp.model_id]) {
+            finalHistories[resp.model_id].push({
+              role: "ai",
+              content: resp.content,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        });
+        setChatHistories(finalHistories);
+      }
+    } catch (error) {
+      console.error("Failed to send prompt:", error);
+    }
+  };
 
   return (
     <div className="flex items-center gap-4 px-8 py-6 border-t border-gray-100/60 bg-white/80 backdrop-blur-sm">
@@ -146,7 +213,7 @@ export function InputPanel() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              // TODO: Send message to all active models
+              handleSend();
             }
           }}
         />
@@ -157,6 +224,7 @@ export function InputPanel() {
         className="h-12 px-6 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
         size="lg"
         disabled={!input.trim()}
+        onClick={handleSend}
       >
         Send
       </Button>
@@ -193,6 +261,10 @@ export function InputPanel() {
               variant="ghost"
               size="icon"
               className="h-10 w-10 rounded-xl hover:bg-gray-100/60"
+              onClick={() => {
+                setChatHistories({});
+                setCurrentConversationId(null);
+              }}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

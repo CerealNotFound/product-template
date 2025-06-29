@@ -60,6 +60,7 @@ export const chatHistoriesAtom = atom<
   "kimi-dev-72b": [],
 });
 export const inputAtom = atom("");
+export const currentConversationIdAtom = atom<string | null>(null);
 
 // New atom for managing chat history per model with automatic cleanup
 export const modelChatHistoriesAtom = atom<Record<string, ModelChatHistory>>(
