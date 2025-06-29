@@ -4,44 +4,44 @@ import { ChatHistoryMessage, ModelChatHistory } from "../types";
 // AI Models data
 export const availableModels = [
   {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    icon: "Bot",
-    premium: true,
-    status: "online",
-  },
-  {
-    id: "gpt-3.5",
-    name: "GPT-3.5",
+    id: "deepseek-chat-v3-0324",
+    name: "DeepSeek Chat v3",
     icon: "Bot",
     premium: false,
     status: "online",
   },
   {
-    id: "claude-sonnet-4",
-    name: "Claude Sonnet 4",
-    icon: "Feather",
-    premium: false,
-    status: "online",
-  },
-  {
-    id: "claude-opus",
-    name: "Claude Opus",
-    icon: "Crown",
-    premium: true,
-    status: "online",
-  },
-  {
-    id: "gemini-pro",
-    name: "Gemini Pro",
+    id: "gemini-2.0-flash-exp",
+    name: "Gemini 2.0 Flash",
     icon: "Gem",
     premium: false,
     status: "online",
   },
   {
-    id: "llama",
-    name: "Llama",
+    id: "qwen3-32b",
+    name: "Qwen 3 32B",
     icon: "Brain",
+    premium: false,
+    status: "online",
+  },
+  {
+    id: "mistral-nemo",
+    name: "Mistral Nemo",
+    icon: "Wand2",
+    premium: false,
+    status: "online",
+  },
+  {
+    id: "llama-4-maverick",
+    name: "Llama 4 Maverick",
+    icon: "Crown",
+    premium: false,
+    status: "online",
+  },
+  {
+    id: "kimi-dev-72b",
+    name: "Kimi Dev 72B",
+    icon: "Feather",
     premium: false,
     status: "online",
   },
@@ -52,12 +52,12 @@ export const layoutAtom = atom<"2" | "3" | "4" | "6">("4");
 export const chatHistoriesAtom = atom<
   Record<string, { role: "user" | "ai"; content: string; timestamp: string }[]>
 >({
-  "gpt-4o": [],
-  "gpt-3.5": [],
-  "claude-sonnet-4": [],
-  "claude-opus": [],
-  "gemini-pro": [],
-  llama: [],
+  "deepseek-chat-v3-0324": [],
+  "gemini-2.0-flash-exp": [],
+  "qwen3-32b": [],
+  "mistral-nemo": [],
+  "llama-4-maverick": [],
+  "kimi-dev-72b": [],
 });
 export const inputAtom = atom("");
 
