@@ -20,7 +20,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("models")
-      .select("id, name, logo")
+      .select("id, name, logo, symbol")
       .order("name", { ascending: true });
 
     if (error) {

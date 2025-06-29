@@ -20,9 +20,9 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("conversations")
-      .select("id, title, created_at")
+      .select("id, title, created_at, updated_at")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("updated_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching conversations:", error);
@@ -32,7 +32,7 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(data || []);
+    return NextResponse.json({ conversations: data || [] });
   } catch (error) {
     console.error("Error in get-conversations:", error);
     return NextResponse.json(

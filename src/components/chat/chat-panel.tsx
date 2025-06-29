@@ -28,6 +28,8 @@ import {
   Wand2,
 } from "lucide-react";
 import { chatHistoriesAtom, availableModels } from "@/lib/atoms/chat";
+import { AIMessage } from "./ai-message";
+import { UserMessage } from "./user-message";
 
 // Icon mapping
 const iconMap = {
@@ -110,65 +112,57 @@ export function ChatPanel({ modelId }: ChatPanelProps) {
       </div>
       <Card className="flex flex-col h-full rounded-2xl border border-gray-100/60 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
         {/* Chat Content */}
-        <ScrollArea className="flex-1 px-6 py-4 space-y-4">
-          {error ? (
-            <Alert
-              variant="destructive"
-              className="rounded-xl border-red-200/50 bg-red-50/50"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-red-700">Model unavailable.</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-red-200 text-red-700 hover:bg-red-100/50 rounded-lg"
-                >
-                  Retry
-                </Button>
-              </div>
-            </Alert>
-          ) : loading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-20 w-full rounded-xl" />
-              <Skeleton className="h-16 w-3/4 rounded-xl" />
-            </div>
-          ) : chatHistories[modelId]?.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 rounded-full bg-gray-100/60 mb-4">
-                <Bot className="h-8 w-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 font-medium">No conversation yet</p>
-              <p className="text-gray-400 text-sm mt-1">
-                Ask something to get started!
-              </p>
-            </div>
-          ) : (
-            chatHistories[modelId].map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col gap-4 px-6 py-4">
+            {error ? (
+              <Alert
+                variant="destructive"
+                className="rounded-xl border-red-200/50 bg-red-50/50"
               >
-                <div
-                  className={`rounded-2xl px-4 py-3 max-w-[85%] text-sm shadow-sm ${
-                    msg.role === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100/60 text-gray-800 border border-gray-200/40"
-                  }`}
-                >
-                  <p className="leading-relaxed">{msg.content}</p>
-                  <div
-                    className={`text-xs mt-2 ${
-                      msg.role === "user" ? "text-blue-100" : "text-gray-500"
-                    }`}
+                <div className="flex items-center justify-between">
+                  <span className="text-red-700">Model unavailable.</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-red-200 text-red-700 hover:bg-red-100/50 rounded-lg"
                   >
-                    {msg.timestamp}
-                  </div>
+                    Retry
+                  </Button>
                 </div>
+              </Alert>
+            ) : loading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-16 w-3/4 rounded-xl" />
               </div>
-            ))
-          )}
+            ) : chatHistories[modelId]?.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="p-4 rounded-full bg-gray-100/60 mb-4">
+                  <Bot className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No conversation yet</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Ask something to get started!
+                </p>
+              </div>
+            ) : (
+              chatHistories[modelId].map((msg, i) =>
+                msg.role === "user" ? (
+                  <UserMessage
+                    key={i}
+                    content={msg.content}
+                    timestamp={msg.timestamp}
+                  />
+                ) : (
+                  <AIMessage
+                    key={i}
+                    content={msg.content}
+                    timestamp={msg.timestamp}
+                  />
+                )
+              )
+            )}
+          </div>
         </ScrollArea>
       </Card>
     </div>

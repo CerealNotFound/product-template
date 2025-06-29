@@ -22,6 +22,7 @@ import {
   availableModels,
   currentConversationIdAtom,
 } from "@/lib/atoms/chat";
+import { useChatPipeline } from "@/lib/hooks/use-chat-pipeline";
 
 // Custom SVGs for panel layouts
 function TwoPanelIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -103,6 +104,7 @@ export function InputPanel() {
   const [currentConversationId, setCurrentConversationId] = useAtom(
     currentConversationIdAtom
   );
+  const { sendPrompt, startNewConversation } = useChatPipeline();
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -125,39 +127,45 @@ export function InputPanel() {
     setInput("");
 
     try {
-      // Use the new pipeline endpoint that creates conversation first
-      const response = await fetch("/api/chat/send-prompt-with-conversation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content,
-          model_ids: availableModels.map((m) => m.id),
-          conversation_title: `Multi-Brain Chat - ${new Date().toLocaleString()}`,
-          conversation_id: currentConversationId,
-        }),
+      // Use the chat pipeline hook
+      const data = await sendPrompt(
+        content,
+        availableModels.map((m) => m.id)
+      );
+
+      // Add AI responses
+      const finalHistories = { ...updatedHistories };
+      data.responses.forEach((resp: any) => {
+        // Find the model by symbol since the API now returns model_symbol
+        const model = availableModels.find(
+          (m) => m.symbol === resp.model_symbol
+        );
+        if (model && finalHistories[model.id]) {
+          finalHistories[model.id].push({
+            role: "ai",
+            content: resp.content,
+            timestamp: new Date().toISOString(),
+          });
+        }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Set the conversation ID for future messages
-        setCurrentConversationId(data.conversation_id);
-
-        // Add AI responses
-        const finalHistories = { ...updatedHistories };
-        data.responses.forEach((resp: any) => {
-          if (finalHistories[resp.model_id]) {
-            finalHistories[resp.model_id].push({
-              role: "ai",
-              content: resp.content,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        });
-        setChatHistories(finalHistories);
-      }
+      setChatHistories(finalHistories);
     } catch (error) {
       console.error("Failed to send prompt:", error);
+      // Add error message to all models
+      const errorHistories = { ...updatedHistories };
+      availableModels.forEach((model) => {
+        if (errorHistories[model.id]) {
+          errorHistories[model.id].push({
+            role: "ai",
+            content: `Error: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`,
+            timestamp: new Date().toISOString(),
+            isError: true,
+          });
+        }
+      });
+      setChatHistories(errorHistories);
     }
   };
 
@@ -263,7 +271,7 @@ export function InputPanel() {
               className="h-10 w-10 rounded-xl hover:bg-gray-100/60"
               onClick={() => {
                 setChatHistories({});
-                setCurrentConversationId(null);
+                startNewConversation();
               }}
             >
               <Trash2 className="h-4 w-4" />

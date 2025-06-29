@@ -4,42 +4,48 @@ import { ChatHistoryMessage, ModelChatHistory } from "../types";
 // AI Models data
 export const availableModels = [
   {
-    id: "deepseek-chat-v3-0324",
+    id: "deepseek/deepseek-chat-v3-0324:free",
+    symbol: "deepseek/deepseek-chat-v3-0324:free",
     name: "DeepSeek Chat v3",
     icon: "Bot",
     premium: false,
     status: "online",
   },
   {
-    id: "gemini-2.0-flash-exp",
+    id: "google/gemini-2.0-flash-exp:free",
+    symbol: "google/gemini-2.0-flash-exp:free",
     name: "Gemini 2.0 Flash",
     icon: "Gem",
     premium: false,
     status: "online",
   },
   {
-    id: "qwen3-32b",
+    id: "qwen/qwen3-32b:free",
+    symbol: "qwen/qwen3-32b:free",
     name: "Qwen 3 32B",
     icon: "Brain",
     premium: false,
     status: "online",
   },
   {
-    id: "mistral-nemo",
+    id: "mistralai/mistral-nemo:free",
+    symbol: "mistralai/mistral-nemo:free",
     name: "Mistral Nemo",
     icon: "Wand2",
     premium: false,
     status: "online",
   },
   {
-    id: "llama-4-maverick",
+    id: "meta-llama/llama-4-maverick:free",
+    symbol: "meta-llama/llama-4-maverick:free",
     name: "Llama 4 Maverick",
     icon: "Crown",
     premium: false,
     status: "online",
   },
   {
-    id: "kimi-dev-72b",
+    id: "moonshotai/kimi-dev-72b:free",
+    symbol: "moonshotai/kimi-dev-72b:free",
     name: "Kimi Dev 72B",
     icon: "Feather",
     premium: false,
@@ -50,14 +56,22 @@ export const availableModels = [
 // Chat state atoms
 export const layoutAtom = atom<"2" | "3" | "4" | "6">("4");
 export const chatHistoriesAtom = atom<
-  Record<string, { role: "user" | "ai"; content: string; timestamp: string }[]>
+  Record<
+    string,
+    {
+      role: "user" | "ai";
+      content: string;
+      timestamp: string;
+      isError?: boolean;
+    }[]
+  >
 >({
-  "deepseek-chat-v3-0324": [],
-  "gemini-2.0-flash-exp": [],
-  "qwen3-32b": [],
-  "mistral-nemo": [],
-  "llama-4-maverick": [],
-  "kimi-dev-72b": [],
+  "deepseek/deepseek-chat-v3-0324:free": [],
+  "google/gemini-2.0-flash-exp:free": [],
+  "qwen/qwen3-32b:free": [],
+  "mistralai/mistral-nemo:free": [],
+  "meta-llama/llama-4-maverick:free": [],
+  "moonshotai/kimi-dev-72b:free": [],
 });
 export const inputAtom = atom("");
 export const currentConversationIdAtom = atom<string | null>(null);

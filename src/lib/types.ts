@@ -73,6 +73,7 @@ export interface ChatHistoryMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+  isError?: boolean;
 }
 
 export interface ModelChatHistory {

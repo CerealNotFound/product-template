@@ -69,8 +69,8 @@ export async function POST(request: NextRequest) {
     // Get model details for the requested model_ids
     const { data: models, error: modelsError } = await supabase
       .from("models")
-      .select("id, name")
-      .in("id", model_ids);
+      .select("id, symbol")
+      .in("symbol", model_ids);
 
     if (modelsError) {
       console.error("Error fetching models:", modelsError);
@@ -87,33 +87,29 @@ export async function POST(request: NextRequest) {
       conversation_id
     );
 
-    // Store all responses in the database
+    // Store responses in the database
     const responsePromises = generatedResponses.map(async (response) => {
       const { error: responseError } = await supabase.from("responses").insert({
         prompt_id: promptData.id,
-        model_id: response.model_id,
+        model_symbol: response.model_symbol,
         content: response.content,
       });
 
       if (responseError) {
         console.error(
-          `Error storing response for model ${response.model_id}:`,
+          `Error storing response for model ${response.model_symbol}:`,
           responseError
         );
-        return null;
       }
 
       return response;
     });
 
     const storedResponses = await Promise.all(responsePromises);
-    const validResponses = storedResponses.filter(
-      (response) => response !== null
-    );
 
     return NextResponse.json({
       prompt_id: promptData.id,
-      responses: validResponses,
+      responses: storedResponses,
     });
   } catch (error) {
     console.error("Error in send-prompt:", error);

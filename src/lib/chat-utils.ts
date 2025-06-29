@@ -6,14 +6,9 @@ import {
   OpenRouterResponse,
 } from "./types";
 
-export interface ChatResponse {
-  model_id: string;
-  content: string;
-}
-
 export interface SendPromptResult {
   prompt_id: string;
-  responses: ChatResponse[];
+  responses: Array<{ model_symbol: string; content: string }>;
 }
 
 // Function to fetch chat history for a conversation
@@ -36,7 +31,7 @@ export async function fetchConversationHistory(
         created_at,
         models (
           id,
-          name
+          symbol
         )
       )
     `
@@ -77,111 +72,84 @@ export async function fetchConversationHistory(
 
 // Actual OpenRouter integration function
 export async function generateOpenRouterResponse(
-  modelName: string,
+  modelSymbol: string,
   prompt: string,
   conversationId?: string
 ): Promise<string> {
-  try {
-    // Fetch conversation history if conversationId is provided
-    let messages: ChatHistoryMessage[] = [];
+  // Fetch conversation history if conversationId is provided
+  let messages: ChatHistoryMessage[] = [];
 
-    if (conversationId) {
-      messages = await fetchConversationHistory(conversationId);
-    }
-
-    // Add the current prompt
-    messages.push({
-      role: "user",
-      content: prompt,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Convert to OpenRouter format (without timestamp)
-    const openRouterMessages: OpenRouterMessage[] = messages.map(
-      ({ role, content }) => ({
-        role,
-        content,
-      })
-    );
-
-    // Make the API call to OpenRouter
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "HTTP-Referer":
-            process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-          "X-Title": process.env.NEXT_PUBLIC_SITE_NAME || "Chat Playground",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: modelName,
-          messages: openRouterMessages,
-        } as OpenRouterRequest),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `OpenRouter API error: ${response.status} ${response.statusText}`
-      );
-    }
-
-    const data: OpenRouterResponse = await response.json();
-
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error("Invalid response format from OpenRouter");
-    }
-
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error("Error calling OpenRouter API:", error);
-
-    // Fallback to dummy response if OpenRouter fails
-    return generateDummyResponse(modelName, prompt);
+  if (conversationId) {
+    messages = await fetchConversationHistory(conversationId);
   }
-}
 
-// Dummy function to simulate AI model responses (fallback)
-export async function generateDummyResponse(
-  modelName: string,
-  prompt: string
-): Promise<string> {
-  // Simulate API delay
-  await new Promise((resolve) =>
-    setTimeout(resolve, Math.random() * 1000 + 500)
+  // Add the current prompt
+  messages.push({
+    role: "user",
+    content: prompt,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Convert to OpenRouter format (without timestamp)
+  const openRouterMessages: OpenRouterMessage[] = messages.map(
+    ({ role, content }) => ({
+      role,
+      content,
+    })
   );
 
-  const responses = [
-    `This is a simulated response from ${modelName}. I understand you asked: "${prompt}". Here's my perspective on this matter...`,
-    `As ${modelName}, I would approach this question by considering multiple factors. Your prompt "${prompt}" raises interesting points that deserve careful analysis.`,
-    `${modelName} here! Regarding "${prompt}", I believe this is a fascinating topic that requires nuanced understanding. Let me share my thoughts...`,
-    `From ${modelName}'s perspective, "${prompt}" touches on important concepts. Here's what I think about this...`,
-    `As an AI model called ${modelName}, I find your question "${prompt}" quite intriguing. Let me provide a thoughtful response...`,
-  ];
+  // Make the API call to OpenRouter
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer":
+          process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+        "X-Title": process.env.NEXT_PUBLIC_SITE_NAME || "Chat Playground",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: modelSymbol,
+        messages: openRouterMessages,
+      } as OpenRouterRequest),
+    }
+  );
 
-  return responses[Math.floor(Math.random() * responses.length)];
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `OpenRouter API error (${response.status}): ${response.statusText}. Details: ${errorText}`
+    );
+  }
+
+  const data: OpenRouterResponse = await response.json();
+
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    throw new Error("Invalid response format from OpenRouter");
+  }
+
+  return data.choices[0].message.content;
 }
 
 // Core function for generating responses from multiple models
 // This function now handles AI response generation with chat history
 export async function generateResponsesFromModels(
-  models: Array<{ id: string; name: string }>,
+  models: Array<{ id: string; symbol: string }>,
   prompt: string,
   conversationId?: string
-): Promise<Array<{ model_id: string; content: string }>> {
+): Promise<Array<{ model_symbol: string; content: string }>> {
   // Generate responses for each model in parallel
   const responsePromises = models.map(async (model) => {
     const responseContent = await generateOpenRouterResponse(
-      model.name,
+      model.symbol,
       prompt,
       conversationId
     );
 
     return {
-      model_id: model.id,
+      model_symbol: model.symbol,
       content: responseContent,
     };
   });
