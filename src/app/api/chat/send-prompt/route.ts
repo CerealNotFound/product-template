@@ -80,10 +80,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate responses using the utility function
+    // Generate responses using the utility function with conversation history
     const generatedResponses = await generateResponsesFromModels(
       models,
-      content
+      content,
+      conversation_id
     );
 
     // Store all responses in the database

@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { ChatHistoryMessage, ModelChatHistory } from "../types";
 
 // AI Models data
 export const availableModels = [
@@ -59,3 +60,26 @@ export const chatHistoriesAtom = atom<
   llama: [],
 });
 export const inputAtom = atom("");
+
+// New atom for managing chat history per model with automatic cleanup
+export const modelChatHistoriesAtom = atom<Record<string, ModelChatHistory>>(
+  {}
+);
+
+// Helper function to clean up unused model histories
+export const cleanupUnusedHistoriesAtom = atom(
+  null,
+  (get, set, activeModelIds: string[]) => {
+    const currentHistories = get(modelChatHistoriesAtom);
+    const newHistories: Record<string, ModelChatHistory> = {};
+
+    // Only keep histories for currently active models
+    activeModelIds.forEach((modelId) => {
+      if (currentHistories[modelId]) {
+        newHistories[modelId] = currentHistories[modelId];
+      }
+    });
+
+    set(modelChatHistoriesAtom, newHistories);
+  }
+);

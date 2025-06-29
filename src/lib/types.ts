@@ -67,3 +67,34 @@ export interface User {
   email?: string;
   created_at: string;
 }
+
+// Chat History types
+export interface ChatHistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
+export interface ModelChatHistory {
+  conversation_id: string;
+  messages: ChatHistoryMessage[];
+  last_updated: string;
+}
+
+export interface OpenRouterMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface OpenRouterRequest {
+  model: string;
+  messages: OpenRouterMessage[];
+}
+
+export interface OpenRouterResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
