@@ -54,7 +54,7 @@ export const availableModels = [
 ];
 
 // Chat state atoms
-export const layoutAtom = atom<"2" | "3" | "4" | "6">("4");
+export const layoutAtom = atom<"1" | "2" | "3" | "4" | "6">("4");
 export const chatHistoriesAtom = atom<
   Record<
     string,
@@ -98,3 +98,11 @@ export const cleanupUnusedHistoriesAtom = atom(
     set(modelChatHistoriesAtom, newHistories);
   }
 );
+
+// Atom to manage selected models for the grid (by id)
+export const selectedModelsAtom = atom<string[]>(
+  availableModels.slice(0, 4).map((m) => m.id)
+);
+
+// Atom to track if we're viewing a historical conversation (locks model selection)
+export const isHistoricalConversationAtom = atom<boolean>(false);

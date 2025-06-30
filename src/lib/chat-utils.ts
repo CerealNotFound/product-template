@@ -113,6 +113,7 @@ export async function generateOpenRouterResponse(
       body: JSON.stringify({
         model: modelSymbol,
         messages: openRouterMessages,
+        usage: true,
       } as OpenRouterRequest),
     }
   );
@@ -129,6 +130,9 @@ export async function generateOpenRouterResponse(
   if (!data.choices || !data.choices[0] || !data.choices[0].message) {
     throw new Error("Invalid response format from OpenRouter");
   }
+
+  console.log(data);
+  console.log(data.choices[0]);
 
   return data.choices[0].message.content;
 }

@@ -27,7 +27,12 @@ import {
   Brain,
   Wand2,
 } from "lucide-react";
-import { chatHistoriesAtom, availableModels } from "@/lib/atoms/chat";
+import {
+  chatHistoriesAtom,
+  availableModels,
+  selectedModelsAtom,
+  isHistoricalConversationAtom,
+} from "@/lib/atoms/chat";
 import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
 
@@ -47,16 +52,36 @@ interface ChatPanelProps {
 
 export function ChatPanel({ modelId }: ChatPanelProps) {
   const [chatHistories] = useAtom(chatHistoriesAtom);
+  const [selectedModels, setSelectedModels] = useAtom(selectedModelsAtom);
+  const [isHistoricalConversation] = useAtom(isHistoricalConversationAtom);
   const model = availableModels.find((m) => m.id === modelId);
   // Dummy loading/error states
   const loading = false;
   const error = model?.status === "offline";
 
+  // Disable select if there are any messages for this model OR if it's a historical conversation
+  const selectDisabled =
+    (chatHistories[modelId]?.length ?? 0) > 0 || isHistoricalConversation;
+
+  // Handler for model selection change
+  const handleModelChange = (newModelId: string) => {
+    // Only update if not disabled
+    if (selectDisabled) return;
+    // Replace this panel's model in selectedModels
+    setSelectedModels((prev) =>
+      prev.map((id) => (id === modelId ? newModelId : id))
+    );
+  };
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between py-4 bg-gradient-to-r from-gray-50/50 to-white/50 border-b border-gray-100/40">
-        <Select>
+        <Select
+          value={modelId}
+          onValueChange={handleModelChange}
+          disabled={selectDisabled}
+        >
           <SelectTrigger>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gray-100/60">
@@ -77,7 +102,13 @@ export function ChatPanel({ modelId }: ChatPanelProps) {
             {availableModels.map((model) => {
               const IconComponent = iconMap[model.icon as keyof typeof iconMap];
               return (
-                <SelectItem key={model.id} value={model.id}>
+                <SelectItem
+                  key={model.id}
+                  value={model.id}
+                  disabled={
+                    selectedModels.includes(model.id) && model.id !== modelId
+                  }
+                >
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg">
                       <span className="text-lg text-gray-600">
@@ -110,9 +141,9 @@ export function ChatPanel({ modelId }: ChatPanelProps) {
           </Tooltip>
         </div>
       </div>
-      <Card className="flex flex-col h-full rounded-2xl border border-gray-100/60 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+      <Card className="flex flex-col h-full min-h-0 rounded-2xl border border-gray-100/60 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
         {/* Chat Content */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-4 px-6 py-4">
             {error ? (
               <Alert
@@ -146,7 +177,7 @@ export function ChatPanel({ modelId }: ChatPanelProps) {
                 </p>
               </div>
             ) : (
-              chatHistories[modelId].map((msg, i) =>
+              (chatHistories[modelId] || []).map((msg, i) =>
                 msg.role === "user" ? (
                   <UserMessage
                     key={i}

@@ -1,4 +1,4 @@
-import { Swords } from "lucide-react";
+import { BrainCircuit, Swords } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 export default function LoginPage() {
   return (
@@ -7,9 +7,9 @@ export default function LoginPage() {
         <div className="flex justify-center gap-2 md:justify-start">
           <a href="#" className="flex items-center gap-2 font-medium">
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-              <Swords className="size-4" />
+              <BrainCircuit className="size-4" />
             </div>
-            Adarsh Inc.
+            MultiBrain
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">

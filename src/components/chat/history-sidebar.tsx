@@ -6,7 +6,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, MessageSquare, Clock } from "lucide-react";
 import { useChatPipeline } from "@/lib/hooks/use-chat-pipeline";
 import { useAtom } from "jotai";
-import { chatHistoriesAtom, currentConversationIdAtom } from "@/lib/atoms/chat";
+import {
+  chatHistoriesAtom,
+  currentConversationIdAtom,
+  selectedModelsAtom,
+  layoutAtom,
+  availableModels,
+  isHistoricalConversationAtom,
+} from "@/lib/atoms/chat";
 
 interface Conversation {
   id: string;
@@ -21,6 +28,9 @@ export function HistorySidebar() {
   const { startNewConversation, currentConversationId } = useChatPipeline();
   const [, setChatHistories] = useAtom(chatHistoriesAtom);
   const [, setCurrentConversationId] = useAtom(currentConversationIdAtom);
+  const [, setSelectedModels] = useAtom(selectedModelsAtom);
+  const [, setLayout] = useAtom(layoutAtom);
+  const [, setIsHistoricalConversation] = useAtom(isHistoricalConversationAtom);
 
   useEffect(() => {
     fetchConversations();
@@ -43,6 +53,7 @@ export function HistorySidebar() {
   const handleNewConversation = () => {
     setChatHistories({});
     startNewConversation();
+    setIsHistoricalConversation(false);
   };
 
   const handleSelectConversation = async (conversationId: string) => {
@@ -56,11 +67,23 @@ export function HistorySidebar() {
         // Set the current conversation ID
         setCurrentConversationId(conversationId);
 
+        // Mark as historical conversation
+        setIsHistoricalConversation(true);
+
+        // Create a mapping from model names to symbols
+        const modelNameToSymbol: Record<string, string> = {};
+        availableModels.forEach((model) => {
+          modelNameToSymbol[model.name] = model.symbol;
+        });
+
         // Transform messages to chat history format
         const newHistories: Record<
           string,
           { role: "user" | "ai"; content: string; timestamp: string }[]
         > = {};
+
+        // Track which models actually responded
+        const respondingModels = new Set<string>();
 
         messages.forEach((message: any) => {
           // Add user message
@@ -72,27 +95,44 @@ export function HistorySidebar() {
 
           // Add AI responses
           message.responses.forEach((response: any) => {
-            if (!newHistories[response.model_id]) {
-              newHistories[response.model_id] = [];
-            }
+            const modelSymbol = modelNameToSymbol[response.model_name];
+            if (modelSymbol) {
+              respondingModels.add(modelSymbol);
 
-            // Add user message if not already added for this model
-            if (
-              !newHistories[response.model_id].some(
-                (msg) => msg.content === message.prompt
-              )
-            ) {
-              newHistories[response.model_id].push(userMessage);
-            }
+              if (!newHistories[modelSymbol]) {
+                newHistories[modelSymbol] = [];
+              }
 
-            // Add AI response
-            newHistories[response.model_id].push({
-              role: "ai" as const,
-              content: response.content,
-              timestamp: response.created_at,
-            });
+              // Add user message if not already added for this model
+              if (
+                !newHistories[modelSymbol].some(
+                  (msg) => msg.content === message.prompt
+                )
+              ) {
+                newHistories[modelSymbol].push(userMessage);
+              }
+
+              // Add AI response
+              newHistories[modelSymbol].push({
+                role: "ai" as const,
+                content: response.content,
+                timestamp: response.created_at,
+              });
+            }
           });
         });
+
+        // Set the selected models based on which ones actually responded
+        const respondingModelsArray = Array.from(respondingModels);
+        setSelectedModels(respondingModelsArray);
+
+        // Set appropriate layout based on number of responding models
+        const modelCount = respondingModelsArray.length;
+        if (modelCount <= 1) setLayout("1");
+        else if (modelCount <= 2) setLayout("2");
+        else if (modelCount <= 3) setLayout("3");
+        else if (modelCount <= 4) setLayout("4");
+        else setLayout("6");
 
         setChatHistories(newHistories);
       }

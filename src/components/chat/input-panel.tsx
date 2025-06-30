@@ -21,10 +21,28 @@ import {
   chatHistoriesAtom,
   availableModels,
   currentConversationIdAtom,
+  selectedModelsAtom,
+  isHistoricalConversationAtom,
 } from "@/lib/atoms/chat";
 import { useChatPipeline } from "@/lib/hooks/use-chat-pipeline";
 
 // Custom SVGs for panel layouts
+function OnePanelIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 32 32" fill="none" {...props}>
+      <rect
+        x="5"
+        y="7"
+        width="22"
+        height="18"
+        rx="3"
+        stroke="#000"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
 function TwoPanelIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg width="20" height="20" viewBox="0 0 32 32" fill="none" {...props}>
@@ -104,6 +122,8 @@ export function InputPanel() {
   const [currentConversationId, setCurrentConversationId] = useAtom(
     currentConversationIdAtom
   );
+  const [selectedModels] = useAtom(selectedModelsAtom);
+  const [, setIsHistoricalConversation] = useAtom(isHistoricalConversationAtom);
   const { sendPrompt, startNewConversation } = useChatPipeline();
 
   const handleSend = async () => {
@@ -112,11 +132,11 @@ export function InputPanel() {
     const content = input.trim();
     const timestamp = new Date().toISOString();
 
-    // Add user message to all models immediately
+    // Add user message to all selected models immediately
     const updatedHistories = { ...chatHistories };
-    availableModels.forEach((model) => {
-      const modelHistory = updatedHistories[model.id] || [];
-      updatedHistories[model.id] = [
+    selectedModels.forEach((modelId) => {
+      const modelHistory = updatedHistories[modelId] || [];
+      updatedHistories[modelId] = [
         ...modelHistory,
         { role: "user", content, timestamp },
       ];
@@ -128,20 +148,15 @@ export function InputPanel() {
 
     try {
       // Use the chat pipeline hook
-      const data = await sendPrompt(
-        content,
-        availableModels.map((m) => m.id)
-      );
+      const data = await sendPrompt(content, selectedModels);
 
       // Add AI responses
       const finalHistories = { ...updatedHistories };
       data.responses.forEach((resp: any) => {
         // Find the model by symbol since the API now returns model_symbol
-        const model = availableModels.find(
-          (m) => m.symbol === resp.model_symbol
-        );
-        if (model && finalHistories[model.id]) {
-          finalHistories[model.id].push({
+        const modelId = resp.model_symbol;
+        if (finalHistories[modelId]) {
+          finalHistories[modelId].push({
             role: "ai",
             content: resp.content,
             timestamp: new Date().toISOString(),
@@ -151,11 +166,11 @@ export function InputPanel() {
       setChatHistories(finalHistories);
     } catch (error) {
       console.error("Failed to send prompt:", error);
-      // Add error message to all models
+      // Add error message to all selected models
       const errorHistories = { ...updatedHistories };
-      availableModels.forEach((model) => {
-        if (errorHistories[model.id]) {
-          errorHistories[model.id].push({
+      selectedModels.forEach((modelId) => {
+        if (errorHistories[modelId]) {
+          errorHistories[modelId].push({
             role: "ai",
             content: `Error: ${
               error instanceof Error ? error.message : "Unknown error"
@@ -179,6 +194,13 @@ export function InputPanel() {
           onValueChange={(v) => v && setLayout(v as any)}
           className="gap-1"
         >
+          <ToggleGroupItem
+            value="1"
+            aria-label="1x1 grid view"
+            className="h-8 w-8 rounded-lg data-[state=on]:bg-white data-[state=on]:shadow-sm transition-all"
+          >
+            <OnePanelIcon />
+          </ToggleGroupItem>
           <ToggleGroupItem
             value="2"
             aria-label="1x2 grid view"
@@ -270,8 +292,15 @@ export function InputPanel() {
               size="icon"
               className="h-10 w-10 rounded-xl hover:bg-gray-100/60"
               onClick={() => {
-                setChatHistories({});
-                startNewConversation();
+                // Initialize empty chat histories for all available models
+                const emptyHistories = availableModels.reduce((acc, model) => {
+                  acc[model.id] = [];
+                  return acc;
+                }, {} as Record<string, any>);
+                setChatHistories(emptyHistories);
+                setCurrentConversationId(null);
+                setInput("");
+                setIsHistoricalConversation(false);
               }}
             >
               <Trash2 className="h-4 w-4" />
