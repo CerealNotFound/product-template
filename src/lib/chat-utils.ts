@@ -25,7 +25,7 @@ export async function fetchConversationHistory(
       id,
       content,
       created_at,
-      responses (
+      responses!responses_prompt_id_fkey (
         id,
         content,
         created_at,
